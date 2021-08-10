@@ -3,3 +3,204 @@ notes.txt
 
 Dev notes for the spsms (Solace Pub Sub Monitor) container project.
 
+AWS AMI Instances
+=================
+
+Glyn set up two AWS ami instances with 
+docker 
+(Version:          19.03.13-ce)
+java
+(java version "1.8.0_131")
+installed.
+
+SolacePubSubMonitor_6.1.0.0.zip
+was installed on 
+/home/ec2-user/rtv
+
+and unpacked (unzip -a) into 
+/home/ec2-user/rtv/SolacePubSubMonitor
+
+commands were verified and run under /home/ec2-user/rtv/SolacePubSubMonitor/bin
+
+The instances (and external/ internal IP's are)
+
+name                External IP         INTERNAL IP
+====                =============       ===========
+
+PRIMARYHOST         18.234.128.85       172.31.36.95
+SECONDARYHOST       18.212.174.66       172.31.42.171
+
+
+Configuring HA 
+===============
+
+~/.bashrc_profile on both machines were modified to include
+
+
+#
+# Set up environment variables for HA operation
+#
+# use internal IP  adresses as it is just for dataserver -> dataserver communication
+#
+
+export PRIMARYHOST=172.31.36.95
+export BACKUPHOST=172.31.42.171
+
+
+such that 
+
+printenv | grep HOST
+HOSTNAME=ip-172-31-36-95.ec2.internal
+BACKUPHOST=172.31.42.171
+PRIMARYHOST=172.31.36.95
+
+
+(the dataservers talk to each other using the values of PRIMARYHOST and BACKUPHOST env vars)
+
+Next update the update_wars.sh script to use these values , thus
+
+# is this true for containers ? its where the apache instance runs
+HOST=localhost
+
+
+# Set HA_HOST to the hostname of the backup data server.
+
+#HA_HOST=
+
+
+# Edit these values for High Availability.
+# Set HA_HOST to the hostname of the backup data server.
+# Set HA_DISPLAYHOST to the hostname of the backup display server.
+# Set HA_FAILBACK to true to automatically reconnect to the primary display server.
+
+HA_HOST=$BACKUPHOST
+HA_DISPLAYHOST=$BACKUPHOST
+HA_FAILBACK=true
+
+
+
+rebuild the wars 
+
+./update_wars.sh
+
+and copy the updates war files to the apache webserver webapps directory
+
+cp *.war ../../apache-tomcat-*/webapps
+
+cp *.war /home/ec2-user/rtv/SolacePubSubMonitor/apache-tomcat-8.5.69-sl/webapps
+
+
+then on the primary in 
+/home/ec2-user/rtv/SolacePubSubMonitor/bin
+
+./start_servers.sh -haprimary -verbose
+
+on the secondary 
+./start_servers.sh -habackup -verbose
+
+
+confirm with 
+jps
+or 
+./status_servers.sh
+
+CHECKING HA
+===========
+
+killing dataserver with kill -9
+
+restarting dataserver with stop_servers.sh / start_servers.sh
+
+
+then looking in 
+
+/home/ec2-user/rtv/SolacePubSubMonitor/projects/rtvie[ec2-user@ip-172-31-36-95 logs]$ cat dataserver.log | grep standbyMode
+2021-08-09 23:17:34,463 INFO  main - [rtview] standbyModeChanged: 0
+w-server/logs
+
+
+[ec2-user@ip-172-31-36-95 logs]$ cat dataserver.log | grep HA
+2021-08-09 23:16:53,724 INFO  main - [rtview] Starting as primary HA data server accessible via //172.31.36.95:4178,//172.31.42.171:4178
+2021-08-09 23:17:33,521 INFO  main - [rtview] DataServerHA: connected to 172.31.42.171:4178
+2021-08-09 23:17:33,573 INFO  main - [rtview] DataServerHA: run as primary server, 172.31.42.171:4178 has lower priority than this server
+2021-08-09 23:32:48,618 INFO  GmsClientReceiverThread-172.31.42.171:4178 - [rtview] DataServerHA: error receiving message: java.io.EOFException (172.31.42.171:4178)
+[
+
+2021-08-09 23:01:05,954 INFO  main - [rtview] Starting as backup HA data server accessible via //172.31.36.95:4178,//172.31.42.171:4178
+2021-08-09 23:01:32,792 INFO  main - [rtview] DataServerHA: connected to 172.31.36.95:4178
+2021-08-09 23:01:32,845 INFO  main - [rtview] DataServerHA: run as backup server, 172.31.36.95:4178 has higher priority than this server
+2021-08-09 23:12:56,006 INFO  GmsClientReceiverThread-172.31.36.95:4178 - [rtview] DataServerHA: error receiving message: java.io.EOFException (172.31.36.95:4178)
+2021-08-09 23:12:56,010 INFO  GmsClientReceiverThread-172.31.36.95:4178 - [rtview] DataServerHA: becoming primary server, lost connection to primary server 172.31.36.95:4178
+2021-08-09 23:17:33,615 INFO  RtvClientReader9-172.31.36.95:54242 - [rtview] DataServerHA: resigning as primary server, got standby directive from other server 172.31.36.95:4178
+2021-08-09 23:17:36,838 INFO  GmsClientReceiverThread-172.31.36.95:4178 - [rtview] DataServerHA: re-connected to 172.31.36.95:4178
+
+[ec2-user@ip-172-31-42-171 logs]$ cat dataserver.log | grep  standbyMode
+2021-08-09 23:12:56,780 INFO  GmsClientReceiverThread-172.31.36.95:4178 - [rtview] standbyModeChanged: 0
+2021-08-09 23:17:33,706 INFO  RtvClientReader9-172.31.36.95:54242 - [rtview] standbyModeChanged: 1
+
+
+Java base container images
+==========================
+
+install and try using 
+
+docker run amazoncorretto:11 java -version
+docker run openjdk:11 java -version
+docker run adoptopenjdk:11 java -version
+docker run adoptopenjdk/openjdk11 java -version
+docker run adoptopenjdk/openjdk11:slim java -version
+
+and then 
+docker images
+for
+
+REPOSITORY               TAG                 IMAGE ID            CREATED             SIZE
+adoptopenjdk/openjdk11   slim                c0afc17b4458        32 hours ago        371MB
+adoptopenjdk/openjdk11   latest              7fdb379b7d9a        32 hours ago        437MB
+amazoncorretto           11                  2b27f3c83c92        7 days ago          445MB
+adoptopenjdk             11                  6786c6dbd92b        2 weeks ago         437MB
+openjdk                  11                  e782567c0965        2 weeks ago         648MB
+
+using 11 as it is latest, supported  and container aware .. 
+
+
+
+
+docker-compose
+==============
+
+installed missing docker-compose using instructions at
+
+https://gist.github.com/npearce/6f3c7826c7499587f00957fee62f8ee9
+
+sudo curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+docker-compose -version
+
+(docker-compose version 1.29.2, build 5becea4c)
+
+
+initial git directories
+=======================
+
+created initial got directories
+
+/home/m/src/dev/spsm_notes ( for this) spsm_notes.txt
+
+and 
+
+/home/m/src/dev/spsm  ( for Dockerfile, docker-compose.yml, README.md and src/run.sh placeholders )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
