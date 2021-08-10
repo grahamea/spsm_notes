@@ -1,0 +1,5 @@
+notes.txt
+=========
+
+Dev notes for the spsms (Solace Pub Sub Monitor) container project.
+
