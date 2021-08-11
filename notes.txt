@@ -192,6 +192,76 @@ and
 /home/m/src/dev/spsm  ( for Dockerfile, docker-compose.yml, README.md and src/run.sh placeholders )
 
 
+Conversation with Glyn moved the defintion of HA to 3 containers on single machine controlled by a docker-compose files
+
+1) tomcat
+2) haprimary
+3) habackup
+
+A tomcat subdirectory and associated Dockerfile and docker-compose file were created to manage the creation of 
+the tomcat container
+
+it was decided that the wars would be build externally and copied into the tomcat container during the build process
+
+It was alkso discovered that the default landing page etc were disabled by default , and can be reinstated by
+
+        # Add the missing webapps disabled by default for security
+        RUN cp -r webapps.dist/* webapps/
+
+
+uses the default tomcat port of 8080 - other values will require configuration.
+
+
+On the primary and backup subdirectory
+
+initially used place holder scripts for  the data servers etc so the docker compose file could be exercised.
+
+Usual items encountered
+
+needed to add net-tools to containers for keying code to avoid run time errors
+
+added tini to containers main script to handle signals (evidenced by much faster shutdown)
+
+no-op scripts addded to supress tomcat inside non tomcat containers
+
+fun and games with environment variables, service names and hostnames to deal with assumptions made in 
+primary and secondary deployements to deal with container / docker compose implementations
+
+and tail the dataserver log file so we can use docker log commands like
+
+docker-compose log [haprimary|habackup|tomcat]
+
+so we can see that failover appears to work with
+
+docker-compose update
+docker-compose log haprimary 
+docker-compose log habackup 
+docker-compose stop haprimary 
+docker-compose start ha-primary 
+
+(using this as a test case)
+
+There is potential to use the docker-compose restart policies 
+but that is almost out of scope ...
+
+
+Still to be done ...
+
+trying to work out what is going on with the  war files such that apache on a different machine ( container )
+
+works as expected ...
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
