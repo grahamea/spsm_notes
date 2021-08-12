@@ -318,6 +318,12 @@ edit updates_wars.sh , run  and copy updated warfiles into warfiles directory
 
 docker-compose up --build -d ( first time)
 
+or 
+
+docker-compose build
+docker-compose up -d
+
+
 docker-compose down
 
 docker-compose up -d
@@ -334,7 +340,7 @@ docker-compose stop haprimary ...
 docker-compose start haprimary 
 
 
-presistence by 
+persistence by 
 
 docker-compose ps
 
@@ -349,6 +355,15 @@ voila ...
 
 
 ( see if there are any further use cases , examples requred etc ...)
+
+also useful commands like
+
+docker-compose logs -f <service>
+
+docker-compose exec <service> /bin/bashrc_profile
+
+docker-compose-images
+
 
 
 ------
@@ -375,14 +390,6 @@ The connection information for a DB instance includes its endpoint, port, and a 
 ·         For user, specify admin.
 
 
-however 
-
-http://database-mysqlmicro.c5krfqqmddsm.us-east-1.rds.amazonaws.com/
-
-This site can’t be reacheddatabase-mysqlmicro.c5krfqqmddsm.us-east-1.rds.amazonaws.com’s server IP address could not be found.
-
-so doesn't resolve ..
-
 downloaded latest mysql j/connnector 8  ( 8.0.26 ) jar from
 
 https://dev.mysql.com/downloads/connector/j/?os=26
@@ -394,6 +401,69 @@ is
 com.mysql.cj.jdbc.Driver
 
 confirmed in Squirrel Sql
+
+e.g.
+driver 
+
+claspath for jar  () 
+
+URL = 
+
+jdbc:mysql://database-mysqlmicro.c5krfqqmddsm.us-east-1.rds.amazonaws.com:3306/RTVHISTORY?sessionVariables=sql_mode=ANSI_QUOTES
+
+for for historian 
+
+
+#########################
+# HISTORIAN
+collector.sl.rtview.sql.sqldb=RTVHISTORY admin 013370134501349013420129101291013310134201342 jdbc:mysql://database-mysqlmicro.c5krfqqmddsm.us-east-1.rds.amazonaws.com:3306/RTVHISTORY?sessionVariables=sql_mode=ANSI_QUOTES com.mysql.cj.jdbc.Driver - false true
+historian.sl.rtview.historian.driver=com.mysql.cj.jdbc.Driver
+historian.sl.rtview.historian.url=jdbc:mysql://database-mysqlmicro.c5krfqqmddsm.us-east-1.rds.amazonaws.com:3306/RTVHISTORY?sessionVariables=sql_mode=ANSI_QUOTES
+historian.sl.rtview.historian.username=admin
+historian.sl.rtview.historian.password=013370134501349013420129101291013310134201342
+historian.sl.rtview.cp=/rtv/SolacePubSubMonitor/projects/lib/*
+collector.sl.rtview.cp=/rtv/SolacePubSubMonitor/projects/lib/*
+
+
+Setup Database
+==============
+
+RTVHISTORY 
+----------
+
+conect to database
+
+CREATE DATABASE RTVHISTORY
+
+USE RTVHISTORY
+
+execute contents of 
+
+SolacePubSubMonitor/rtvapm/solmon/dbconfig
+
+e.g.
+
+create_solmon_history_tables_mysql.sql
+
+ALERTDEFS 
+---------
+
+conect to database
+
+CREATE DATABASE ALERTDEFS
+
+USE ALERTDEFS
+
+execute contents of 
+
+SolacePubSubMonitor/rtvapm/common/dbconfig
+
+e.g.
+
+create_common_alertdefs_tables_mysql.sql
+
+
+
 
 
 
