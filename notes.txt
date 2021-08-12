@@ -463,6 +463,38 @@ e.g.
 create_common_alertdefs_tables_mysql.sql
 
 
+So shown container connecting to external database working
+
+SYSLOG
+======
+
+we need to expose a (listening) port for SYSLOG
+
+so expose the port in the Dockerfile
+
+
+# expose port used by syslog listener
+EXPOSE 10601
+
+
+But both HA containers run on the same host  ... how can we deconflict the port conflict ?
+
+By mapping the ports in the docker compose file 
+
+
+haprimary:
+ports:
+      #exposed port for syslog (primary) on <this_host>:10601)
+      - 10601:10601
+
+
+habackup:
+ports:
+      #exposed port for syslog (backup on <this_host>:10602)
+      - 10602:10601      
+
+
+
 
 
 
