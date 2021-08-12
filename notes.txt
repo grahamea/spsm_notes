@@ -252,6 +252,155 @@ trying to work out what is going on with the  war files such that apache on a di
 works as expected ...
 
 
+------------
+
+apache tomcat needs to be configured like the SL instance
+
+So copy across the changes as described in  README_RTVIEW.txt
+
+(these could be made more fine grained in the tomcat/Dockerfile)
+
+key changes used in the update wars script
+
+# Set HA_HOST to the hostname of the backup data server.  
+
+HOST=haprimary
+HA_HOST=habackup
+
+fun and games with  Dockerfile COPY operation - source must be in DIR tree - so we need a local copy of  SolacePubSubMonitor
+
+when configured correctly - tomcat behaves as expected
+
+war files updated to use the (docker local dns service names / hosts haprimary and habackup) - no ports need to be exposed thanks to the magic of docker networking
+
+---
+
+haprimary / habackup persistence
+
+lots of fun and games with the small details of persistence / mounted volumes
+
+mounted volumes overwite / replace what was at the mount point ...
+
+so just mounting an (empty) volume had the effect of blanking out / replacing was there 
+
+so we need to pre-populate what went there before
+
+also file permissions need to be set so the container user ID can update the mounted files if neccesary
+
+also seems updates can only happen at the level of the mounted volume ( projects didn't seem to work , hence mount at rtview-server)
+discovered a temp directory - so mounted filesystem for that would be slower / not a good idea.
+
+made a lib directiry for classpath / added jars ( e.g. external database)
+
+hence
+
+setup_volumes.sh script
+
+---
+
+Now that is all set up - we get perisistece of settings ... effect
+
+---
+
+TBD
+
+1) add external database - show use and persistence of setup for e.g. external MySql
+
+use cases
+
+==============
+
+1) document and exercise setup from scratch 
+
+(unzip -a SolacePubSubMonitor , once in root , once in tomcat)
+
+edit updates_wars.sh , run  and copy updated warfiles into warfiles directory 
+
+docker-compose up --build -d ( first time)
+
+docker-compose down
+
+docker-compose up -d
+
+setup
+
+then show effects of 
+docker-compose logs [-f] [haprimary|habackup|tomcat]
+
+
+failover by
+
+docker-compose stop haprimary ...
+docker-compose start haprimary 
+
+
+presistence by 
+
+docker-compose ps
+
+docker-compose down ...
+
+docker-compose ps ( nothing up my sleve )
+
+docker-compose up 
+
+
+voila ...
+
+
+( see if there are any further use cases , examples requred etc ...)
+
+
+------
+
+Database details
+
+database-mysqlmicro.c5krfqqmddsm.us-east-1.rds.amazonaws.com
+
+user: admin
+password: m password
+
+How to connect:
+
+https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_CommonTasks.Connect.html
+
+provides:
+
+The connection information for a DB instance includes its endpoint, port, and a valid database user, such as the master user. For example, for a MySQL DB instance, suppose that the endpoint value is mydb.123456789012.us-east-1.rds.amazonaws.com. In this case, the port value is 3306, and the database user is admin. Given this information, you specify the following values in a connection string:
+
+·         For host or host name or DNS name, specify mydb.123456789012.us-east-1.rds.amazonaws.com.
+
+·         For port, specify 3306.
+
+·         For user, specify admin.
+
+
+however 
+
+http://database-mysqlmicro.c5krfqqmddsm.us-east-1.rds.amazonaws.com/
+
+This site can’t be reacheddatabase-mysqlmicro.c5krfqqmddsm.us-east-1.rds.amazonaws.com’s server IP address could not be found.
+
+so doesn't resolve ..
+
+downloaded latest mysql j/connnector 8  ( 8.0.26 ) jar from
+
+https://dev.mysql.com/downloads/connector/j/?os=26
+
+driver class, from  https://dev.mysql.com/doc/connector-j/8.0/en/connector-j-reference-driver-name.html
+
+is 
+
+com.mysql.cj.jdbc.Driver
+
+confirmed in Squirrel Sql
+
+
+
+
+
+
+
 
 
 
